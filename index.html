@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор</title>
+    <meta name="theme-color" content="#070b12">
+    <meta name="description" content="Калькулятор с валютным конвертером и настройками дизайна">
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root {
+            color-scheme: dark;
+            --background: #070b12;
+            --surface: rgba(13, 22, 34, .88);
+            --display: #09131f;
+            --key: #142233;
+            --key-hover: #1d344b;
+            --muted: #7591a8;
+            --text: #e8f7ff;
+            --accent: #41e6ff;
+            --accent-hover: #8af1ff;
+            --operator: #173d52;
+            --operator-hover: #20536b;
+            --grid: rgba(65, 230, 255, .045);
+            --glow: rgba(65, 230, 255, .28);
+            --border: rgba(65, 230, 255, .25);
+            --display-text: #f2fcff;
+            --font-scale: 1;
+            --font-family: "Trebuchet MS", Verdana, sans-serif;
+        }
+
+        body[data-theme="amber"] {
+            --background: #130d08;
+            --surface: rgba(35, 24, 15, .9);
+            --display: #1b120b;
+            --key: #302015;
+            --key-hover: #46301d;
+            --muted: #b79a77;
+            --text: #fff3df;
+            --accent: #ffb84d;
+            --accent-hover: #ffd27d;
+            --operator: #593416;
+            --operator-hover: #764719;
+            --grid: rgba(255, 184, 77, .045);
+            --glow: rgba(255, 184, 77, .28);
+            --border: rgba(255, 184, 77, .25);
+            --display-text: #fff8ed;
+        }
+
+        body[data-theme="matrix"] {
+            --background: #050b08;
+            --surface: rgba(9, 25, 18, .9);
+            --display: #06150d;
+            --key: #102a1c;
+            --key-hover: #18432b;
+            --muted: #6da782;
+            --text: #ddffe8;
+            --accent: #55f28a;
+            --accent-hover: #9affb8;
+            --operator: #14532f;
+            --operator-hover: #1d7542;
+            --grid: rgba(85, 242, 138, .045);
+            --glow: rgba(85, 242, 138, .28);
+            --border: rgba(85, 242, 138, .25);
+            --display-text: #ebfff0;
+        }
+
+        body[data-theme="sunset"] {
+            --background: #160b16;
+            --surface: rgba(36, 18, 33, .9);
+            --display: #1e0e1c;
+            --key: #35203a;
+            --key-hover: #4e2b4f;
+            --muted: #b995b9;
+            --text: #fff0fb;
+            --accent: #ff71b8;
+            --accent-hover: #ff9dce;
+            --operator: #65305d;
+            --operator-hover: #864073;
+            --grid: rgba(255, 113, 184, .045);
+            --glow: rgba(255, 113, 184, .28);
+            --border: rgba(255, 113, 184, .25);
+            --display-text: #fff4fb;
+        }
+
+        body[data-theme="dark"] {
+            --background: #090b10;
+            --surface: rgba(20, 23, 30, .94);
+            --display: #11151d;
+            --key: #242a35;
+            --key-hover: #323b49;
+            --muted: #8d99aa;
+            --text: #f1f4f8;
+            --accent: #d5dde8;
+            --accent-hover: #ffffff;
+            --operator: #353d4a;
+            --operator-hover: #465263;
+            --grid: rgba(255, 255, 255, .035);
+            --glow: rgba(213, 221, 232, .18);
+            --border: rgba(213, 221, 232, .2);
+            --display-text: #ffffff;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            display: grid;
+            min-height: 100vh;
+            margin: 0;
+            place-items: center;
+            padding: 24px;
+            background:
+                linear-gradient(var(--grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+                radial-gradient(circle at 50% -20%, color-mix(in srgb, var(--accent) 18%, var(--background)) 0, var(--background) 62%);
+            background-size: 32px 32px, 32px 32px, auto;
+            color: var(--text);
+            font-family: "Trebuchet MS", Verdana, sans-serif;
+        }
+
+        .calculator {
+            width: min(100%, 380px);
+            padding: 18px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            background: var(--surface);
+            box-shadow: 0 24px 80px rgba(0, 0, 0, .6), 0 0 42px rgba(65, 230, 255, .08);
+            backdrop-filter: blur(16px);
+            animation: rise-in .55s ease both;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 2px 6px 14px;
+            color: var(--muted);
+            font-size: 11px;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+        }
+
+        .mode-tabs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            margin-bottom: 14px;
+        }
+
+        .mode-tab {
+            min-height: 36px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--muted);
+            font-size: 11px;
+            letter-spacing: .04em;
+        }
+
+        .mode-tab.active,
+        .mode-tab:hover { background: var(--operator); color: var(--accent); }
+
+        .design-panel,
+        .currency-panel { display: none; }
+
+        .display[hidden],
+        .keys[hidden] { display: none; }
+
+        .design-panel.open,
+        .currency-panel.open { display: block; }
+
+        .design-panel {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .design-panel.open { display: grid; }
+
+        .design-panel label,
+        .currency-panel label {
+            color: var(--muted);
+            font-size: 11px;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+        }
+
+        .design-panel label { display: grid; gap: 4px; }
+
+        .design-control,
+        .currency-control {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 7px 8px;
+            background: var(--display);
+            color: var(--text);
+            font: inherit;
+            font-size: 12px;
+        }
+
+        .design-actions { display: flex; gap: 6px; align-items: end; }
+
+        .currency-panel { margin-bottom: 14px; }
+
+        .currency-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .currency-grid label { display: grid; gap: 4px; }
+
+        .currency-amount { grid-column: span 2; }
+
+        .currency-swap {
+            min-height: 38px;
+            margin-top: 8px;
+            border-color: var(--border);
+            color: var(--accent);
+            font-size: 16px;
+        }
+
+        .currency-result {
+            margin-top: 12px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: var(--display);
+            color: var(--display-text);
+            font-family: var(--font-family);
+            font-size: calc(24px * var(--font-scale));
+            text-align: right;
+        }
+
+        .currency-note {
+            margin-top: 7px;
+            color: var(--muted);
+            font-size: 10px;
+            text-align: right;
+        }
+
+        .currency-note.online { color: var(--accent); }
+
+        .brand strong { color: var(--accent); font-size: 17px; letter-spacing: .08em; text-shadow: 0 0 14px var(--glow); }
+
+        .settings {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .theme-picker {
+            width: 88px;
+            max-width: 88px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 5px 7px;
+            background: var(--display);
+            color: var(--muted);
+            cursor: pointer;
+            font: inherit;
+            font-size: 10px;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+        }
+
+        .theme-picker:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+        .invert-toggle {
+            min-height: 0;
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 5px 8px;
+            background: var(--display);
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1;
+        }
+
+        .invert-toggle:hover,
+        .invert-toggle.active { border-color: var(--accent); color: var(--accent); }
+
+        body.is-inverted { filter: invert(1) hue-rotate(180deg); }
+
+        .font-size-toggle {
+            min-height: 0;
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 5px 7px;
+            background: var(--display);
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1;
+        }
+
+        .font-size-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+        .display {
+            min-height: 132px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-end;
+            overflow: hidden;
+            margin-bottom: 14px;
+            padding: 20px 18px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--display);
+            box-shadow: inset 0 0 24px rgba(65, 230, 255, .06);
+            font-family: var(--font-family);
+        }
+
+        .history {
+            min-height: 22px;
+            max-width: 100%;
+            overflow: hidden;
+            color: var(--muted);
+            font-family: var(--font-family);
+            font-size: calc(14px * var(--font-scale));
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .value {
+            width: 100%;
+            overflow: hidden;
+            color: var(--display-text);
+            font-family: var(--font-family);
+            font-size: calc(clamp(34px, 11vw, 50px) * var(--font-scale));
+            line-height: 1.1;
+            text-align: right;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-shadow: 0 0 18px var(--glow);
+        }
+
+        .keys {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            font-family: var(--font-family);
+        }
+
+        button {
+            min-height: 62px;
+            border: 1px solid rgba(130, 185, 211, .08);
+            border-radius: 11px;
+            background: var(--key);
+            color: var(--text);
+            cursor: pointer;
+            font-family: var(--font-family);
+            font-size: calc(24px * var(--font-scale));
+            transition: background .15s ease, border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+        }
+
+        button:hover { background: var(--key-hover); border-color: var(--border); box-shadow: 0 0 16px var(--glow); }
+        button:active { transform: scale(.95); }
+        button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+        .utility { color: var(--accent); font-size: calc(18px * var(--font-scale)); letter-spacing: .03em; }
+        .operator { background: var(--operator); color: var(--accent); }
+        .operator:hover { background: var(--operator-hover); }
+        .equals { background: var(--accent); color: var(--background); font-weight: bold; box-shadow: 0 0 18px var(--glow); }
+        .equals:hover { background: var(--accent-hover); box-shadow: 0 0 24px var(--glow); }
+        .zero { grid-column: span 2; }
+
+        @keyframes rise-in {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 400px) {
+            body { padding: 12px; }
+            .calculator { padding: 13px; }
+            .brand { align-items: flex-start; flex-wrap: wrap; gap: 8px; }
+            .settings { width: 100%; flex-wrap: wrap; justify-content: flex-end; }
+            .theme-picker { width: auto; max-width: 112px; min-width: 0; flex: 1 1 92px; }
+            button { min-height: 58px; }
+        }
+    </style>
+</head>
+<body>
+    <main class="calculator" aria-label="Калькулятор">
+        <div class="brand">
+            <span>инструменты</span>
+        </div>
+        <nav class="mode-tabs" aria-label="Разделы приложения">
+            <button class="mode-tab active" data-mode="calculator" type="button">Калькулятор</button>
+            <button class="mode-tab" data-mode="design" type="button">Дизайн</button>
+            <button class="mode-tab" data-mode="currency" type="button">Валюты</button>
+        </nav>
+
+        <section class="design-panel" id="designPanel" aria-label="Настройки дизайна">
+            <label>Тема
+                <select class="design-control" id="themePicker" aria-label="Выбрать тему">
+                    <optgroup label="Цветовые темы">
+                        <option value="neon">Неон</option>
+                        <option value="amber">Янтарь</option>
+                        <option value="matrix">Матрица</option>
+                        <option value="sunset">Закат</option>
+                    </optgroup>
+                    <option value="dark">Ч/Б</option>
+                </select>
+            </label>
+            <label>Шрифт
+                <select class="design-control" id="fontPicker" aria-label="Выбрать шрифт">
+                    <optgroup label="Шрифты">
+                        <option value="trebuchet">Tech</option>
+                        <option value="classic">Classic</option>
+                        <option value="mono">Mono</option>
+                        <option value="impact">Impact</option>
+                        <option value="book">Book</option>
+                        <option value="courier">Typewriter</option>
+                        <option value="gill">Humanist</option>
+                        <option value="comic">Playful</option>
+                    </optgroup>
+                </select>
+            </label>
+            <div class="design-actions">
+                <button class="font-size-toggle" id="fontDecrease" type="button" aria-label="Уменьшить размер шрифта" title="Уменьшить шрифт">A−</button>
+                <button class="font-size-toggle" id="fontIncrease" type="button" aria-label="Увеличить размер шрифта" title="Увеличить шрифт">A+</button>
+                <button class="invert-toggle" id="invertToggle" type="button" aria-label="Инвертировать цвета" title="Инверсия цветов">◐</button>
+            </div>
+        </section>
+
+        <section class="currency-panel" id="currencyPanel" aria-label="Конвертер валют">
+            <div class="currency-grid">
+                <label class="currency-amount">Сумма
+                    <input class="currency-control" id="currencyAmount" type="number" min="0" step="any" value="1">
+                </label>
+                <label>Из
+                    <select class="currency-control" id="currencyFrom">
+                        <option value="USD">USD · Доллар</option>
+                        <option value="EUR">EUR · Евро</option>
+                        <option value="RUB">RUB · Рубль</option>
+                        <option value="GBP">GBP · Фунт</option>
+                        <option value="CNY">CNY · Юань</option>
+                        <option value="JPY">JPY · Иена</option>
+                    </select>
+                </label>
+                <label>В
+                    <select class="currency-control" id="currencyTo">
+                        <option value="EUR">EUR · Евро</option>
+                        <option value="USD">USD · Доллар</option>
+                        <option value="RUB">RUB · Рубль</option>
+                        <option value="GBP">GBP · Фунт</option>
+                        <option value="CNY">CNY · Юань</option>
+                        <option value="JPY">JPY · Иена</option>
+                    </select>
+                </label>
+            </div>
+            <button class="currency-swap" id="currencySwap" type="button" aria-label="Поменять валюты местами">⇄</button>
+            <div class="currency-result" id="currencyResult">0.92 EUR</div>
+            <div class="currency-note" id="currencyNote">Загрузка онлайн-курса...</div>
+        </section>
+
+        <section class="display" aria-live="polite">
+            <div class="history" id="history"></div>
+            <div class="value" id="display">0</div>
+        </section>
+        <section class="keys">
+            <button class="utility" data-action="clear">AC</button>
+            <button class="utility" data-action="delete" aria-label="Удалить последний символ">DEL</button>
+            <button class="utility" data-action="percent">%</button>
+            <button class="operator" data-value="/" aria-label="Деление">÷</button>
+            <button data-value="7">7</button>
+            <button data-value="8">8</button>
+            <button data-value="9">9</button>
+            <button class="operator" data-value="*" aria-label="Умножение">×</button>
+            <button data-value="4">4</button>
+            <button data-value="5">5</button>
+            <button data-value="6">6</button>
+            <button class="operator" data-value="-" aria-label="Вычитание">−</button>
+            <button data-value="1">1</button>
+            <button data-value="2">2</button>
+            <button data-value="3">3</button>
+            <button class="operator" data-value="+" aria-label="Сложение">+</button>
+            <button class="zero" data-value="0">0</button>
+            <button data-value=".">.</button>
+            <button class="equals" data-action="calculate">=</button>
+        </section>
+    </main>
+
+    <script>
+        const display = document.querySelector('#display');
+        const history = document.querySelector('#history');
+        const themePicker = document.querySelector('#themePicker');
+        const fontPicker = document.querySelector('#fontPicker');
+        const fontDecrease = document.querySelector('#fontDecrease');
+        const fontIncrease = document.querySelector('#fontIncrease');
+        const invertToggle = document.querySelector('#invertToggle');
+        const designPanel = document.querySelector('#designPanel');
+        const currencyPanel = document.querySelector('#currencyPanel');
+        const displaySection = document.querySelector('.display');
+        const keysSection = document.querySelector('.keys');
+        const currencyAmount = document.querySelector('#currencyAmount');
+        const currencyFrom = document.querySelector('#currencyFrom');
+        const currencyTo = document.querySelector('#currencyTo');
+        const currencyResult = document.querySelector('#currencyResult');
+        const currencySwap = document.querySelector('#currencySwap');
+        const modeTabs = document.querySelectorAll('.mode-tab');
+        let expression = '';
+        let justCalculated = false;
+
+        const fallbackRates = { USD: 1, EUR: .92, RUB: 92, GBP: .79, CNY: 7.24, JPY: 157 };
+        let rates = { ...fallbackRates };
+        const currencyNote = document.querySelector('#currencyNote');
+
+        async function loadOnlineRates() {
+            currencyNote.textContent = 'Загрузка онлайн-курса...';
+            currencyNote.classList.remove('online');
+            try {
+                const response = await fetch('https://open.er-api.com/v6/latest/USD');
+                if (!response.ok) throw new Error('Курс недоступен');
+                const data = await response.json();
+                if (data.result !== 'success' || !data.rates?.RUB) throw new Error('Неверный ответ');
+                rates = Object.fromEntries(Object.keys(fallbackRates).map(code => [code, data.rates[code] || fallbackRates[code]]));
+                currencyNote.textContent = `Онлайн-курс · обновлено ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
+                currencyNote.classList.add('online');
+                updateCurrency();
+            } catch {
+                currencyNote.textContent = 'Нет интернета · использован резервный курс';
+                updateCurrency();
+            }
+        }
+
+        function updateCurrency() {
+            const amount = Number(currencyAmount.value) || 0;
+            const converted = amount / rates[currencyFrom.value] * rates[currencyTo.value];
+            currencyResult.textContent = `${Number(converted.toFixed(4))} ${currencyTo.value}`;
+        }
+
+        function showMode(mode) {
+            const isDesign = mode === 'design';
+            const isCurrency = mode === 'currency';
+            designPanel.classList.toggle('open', isDesign);
+            currencyPanel.classList.toggle('open', isCurrency);
+            displaySection.hidden = isCurrency;
+            keysSection.hidden = isCurrency;
+            modeTabs.forEach(tab => tab.classList.toggle('active', tab.dataset.mode === mode));
+            if (isCurrency) loadOnlineRates();
+        }
+
+        modeTabs.forEach(tab => tab.addEventListener('click', () => showMode(tab.dataset.mode)));
+        [currencyAmount, currencyFrom, currencyTo].forEach(control => control.addEventListener('input', updateCurrency));
+        currencySwap.addEventListener('click', () => {
+            const previousFrom = currencyFrom.value;
+            currencyFrom.value = currencyTo.value;
+            currencyTo.value = previousFrom;
+            updateCurrency();
+        });
+        updateCurrency();
+
+        const savedTheme = localStorage.getItem('calculator-theme') === 'light'
+            ? 'dark'
+            : localStorage.getItem('calculator-theme') || 'neon';
+        document.body.dataset.theme = savedTheme;
+        themePicker.value = savedTheme;
+
+        themePicker.addEventListener('change', () => {
+            document.body.dataset.theme = themePicker.value;
+            localStorage.setItem('calculator-theme', themePicker.value);
+        });
+
+        const fontFamilies = {
+            trebuchet: '"Trebuchet MS", Verdana, sans-serif',
+            classic: 'Georgia, "Times New Roman", serif',
+            mono: 'Consolas, "Courier New", monospace',
+            impact: 'Impact, "Arial Narrow", sans-serif',
+            book: '"Book Antiqua", Palatino, serif',
+            courier: '"Courier New", Courier, monospace',
+            gill: '"Gill Sans", "Trebuchet MS", sans-serif',
+            comic: '"Comic Sans MS", "Trebuchet MS", sans-serif'
+        };
+        const savedFont = localStorage.getItem('calculator-font') || 'trebuchet';
+        const savedScale = Number(localStorage.getItem('calculator-font-scale')) || 1;
+        document.body.style.setProperty('--font-family', fontFamilies[savedFont] || fontFamilies.trebuchet);
+        document.body.style.setProperty('--font-scale', savedScale);
+        fontPicker.value = fontFamilies[savedFont] ? savedFont : 'trebuchet';
+
+        fontPicker.addEventListener('change', () => {
+            document.body.style.setProperty('--font-family', fontFamilies[fontPicker.value]);
+            localStorage.setItem('calculator-font', fontPicker.value);
+        });
+
+        function changeFontScale(amount) {
+            const currentScale = Number(getComputedStyle(document.body).getPropertyValue('--font-scale')) || 1;
+            const nextScale = Math.min(1.2, Math.max(.85, Number((currentScale + amount).toFixed(2))));
+            document.body.style.setProperty('--font-scale', nextScale);
+            localStorage.setItem('calculator-font-scale', nextScale);
+        }
+
+        fontDecrease.addEventListener('click', () => changeFontScale(-.05));
+        fontIncrease.addEventListener('click', () => changeFontScale(.05));
+
+        const isInverted = localStorage.getItem('calculator-inverted') === 'true';
+        document.body.classList.toggle('is-inverted', isInverted);
+        invertToggle.classList.toggle('active', isInverted);
+
+        invertToggle.addEventListener('click', () => {
+            const enabled = document.body.classList.toggle('is-inverted');
+            invertToggle.classList.toggle('active', enabled);
+            localStorage.setItem('calculator-inverted', enabled);
+        });
+
+        function render() {
+            display.textContent = expression || '0';
+        }
+
+        function addValue(value) {
+            if (justCalculated && value === '.') expression = '0';
+            if (justCalculated && /[0-9]/.test(value)) expression = '';
+            justCalculated = false;
+            if (value === '.' && /(?:^|[+\-*/])\d*\.\d*$/.test(expression)) return;
+            if (/[+\-*/]/.test(value) && /[+\-*/]$/.test(expression)) {
+                expression = expression.slice(0, -1);
+            }
+            expression += value;
+            render();
+        }
+
+        function calculate() {
+            if (!expression || /[+\-*/.]$/.test(expression)) return;
+            try {
+                let calculationExpression = expression;
+                let percentMatch;
+
+                while ((percentMatch = calculationExpression.match(/(?:\d+\.?\d*|\.\d+)%/))) {
+                    const start = percentMatch.index;
+                    const number = Number(percentMatch[0].slice(0, -1));
+                    const operator = calculationExpression[start - 1];
+                    const baseExpression = calculationExpression.slice(0, start - 1);
+                    let percent = number / 100;
+
+                    if ((operator === '+' || operator === '-') && baseExpression) {
+                        const base = Function(`"use strict"; return (${baseExpression})`)();
+                        if (Number.isFinite(base)) percent = base * number / 100;
+                    }
+
+                    calculationExpression = calculationExpression.slice(0, start) + String(percent) + calculationExpression.slice(start + percentMatch[0].length);
+                }
+
+                const result = Function(`"use strict"; return (${calculationExpression})`)();
+                if (!Number.isFinite(result)) throw new Error('invalid');
+                history.textContent = `${expression.replaceAll('*', '×').replaceAll('/', '÷')} =`;
+                expression = String(Number(result.toFixed(10)));
+                justCalculated = true;
+                render();
+            } catch {
+                history.textContent = 'Ошибка вычисления';
+                expression = '';
+                render();
+            }
+        }
+
+        document.querySelector('.keys').addEventListener('click', (event) => {
+            const button = event.target.closest('button');
+            if (!button) return;
+            if (button.dataset.value) addValue(button.dataset.value);
+            if (button.dataset.action === 'clear') {
+                expression = '';
+                history.textContent = '';
+                justCalculated = false;
+                render();
+            }
+            if (button.dataset.action === 'delete') {
+                expression = expression.slice(0, -1);
+                render();
+            }
+            if (button.dataset.action === 'percent' && expression) {
+                const numberAtEnd = expression.match(/(?:\d+\.?\d*|\.\d+)$/);
+                if (numberAtEnd && !expression.endsWith('%')) {
+                    expression += '%';
+                    render();
+                }
+            }
+            if (button.dataset.action === 'calculate') calculate();
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (/^[0-9.]$/.test(event.key)) addValue(event.key);
+            if ('+-*/'.includes(event.key)) addValue(event.key);
+            if (event.key === '%') document.querySelector('[data-action="percent"]').click();
+            if (event.key === 'Enter' || event.key === '=') calculate();
+            if (event.key === 'Backspace') expression = expression.slice(0, -1), render();
+            if (event.key === 'Escape') expression = '', history.textContent = '', render();
+        });
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(() => {});
+        }
+    </script>
+</body>
+</html>
